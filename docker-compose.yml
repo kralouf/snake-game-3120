@@ -1,19 +1,12 @@
-services:
-  nginx:
-    image: nginx:latest
-    ports:
-      - '80:80'
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./public:/usr/share/nginx/html
+version: '3.8'
 
-  node_app:
-    image: node:16
-    working_dir: /usr/src/app
-    volumes:
-      - ./app:/usr/src/app
-    command: "npm start"
+services:
+  web:
+    build: .
     ports:
-      - '3000:3000'
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
     environment:
-      NODE_ENV: production
+      - NODE_ENV=development

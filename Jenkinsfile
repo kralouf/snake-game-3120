@@ -9,7 +9,7 @@ stage('Cloning Git')
 stage('Build-and-Tag')
 {
     /* Builds the actual image; synchronous to docker build on the CLI */
-    app = docker.build('lkraimer/car_docker_repo')
+    app = docker.build('lkraimer/snake_game_3120')
 }
 stage('Post-to-DockerHub')
 {

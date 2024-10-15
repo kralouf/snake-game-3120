@@ -1,2 +1,2 @@
-FROM nginx:2.4
+FROM nginx:latest
 COPY . /usr/local/nginx/htdocs/

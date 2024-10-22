@@ -1,79 +1,42 @@
-pipeline
+node('ubuntu-Appserver-3120')
 {
-    agent none
-    stages
+    def app
+    stage('Cloning Git')
     {
-        stage('Cloning Git')
+    /* Let's make sure we have the repository cloned to our workspace */
+    checkout scm
+    }
+ 
+      stage('SCA-SAST-SNYK-TEST') 
+      {
+       agent 
+       {
+         label 'ubuntu-Appserver-3120'
+       }
+         snykSecurity(
+            snykInstallation: 'Snyk',
+            snykTokenId: 'Synkid',
+            severity: 'critical'
+         )
+       }
+    stage('Build-and-Tag')
+    {
+        /* This builds the actual image; 
+        * This is synonymous to docker build on the command line */
+        app = docker.build("lkraimer/snake_game_3120")
+    }
+    stage('Post-to-dockerhub')
+    {
+        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub_credentials')
         {
-            agent
-            {
-                label 'ubuntu-Appserver-3120'
-            }
-            steps
-            {
-                checkout scm
-            }
-        }
-        stage('SCA-SAST-Snyk-Test')
-        {
-            agent
-            {
-                label 'ubuntu-Appserver-3120'
-            }
-            steps
-            {
-                snykSecurity(
-                snykInstallation: 'Snyk',
-                snykTokenId: 'Snykid',
-                severity: 'critical'
-            )
-            }
-            
-        }
-        stage('Build-and-Tag')
-        {
-            agent
-            {
-                label 'ubuntu-Appserver-3120'
-            }
-            steps
-            {
-                script
-                {
-                    def app = docker.build("lkraimer/snake_game_3120")
-                    app.tag("latest")
-                }
-            }
-        }
-        stage('Post-to-DockerHub')
-        {
-            agent
-            {
-                label 'ubuntu-Appserver-3120'
-            }
-            steps
-            {
-                script
-                {
-                    docker.withRegistry("https://registry.hub.docker.com", "dockerhub_credentials")
-                    {
-                        def app = docker.image("lkraimer/snake_game_3120")
-                        app.push("latest")
-                    }
-                }
-            }
-        }
-        stage('Deployment')
-        {
-            agent
-            {
-                label 'ubuntu-Appserver-3120'
-            }
-            steps
-            {
-                sh "docker compose down"
-                sh "docker-compose up -d"
-            }
+         app.push("latest")
         }
     }
+ 
+    stage('Pull-image-server')
+    {
+        sh "docker-compose down"
+        sh "docker-compose up -d"
+    }
+ 
 }

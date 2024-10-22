@@ -15,8 +15,7 @@ node('ubuntu-Appserver-3120')
        }
          snykSecurity(
             snykInstallation: 'Snyk',
-            snykTokenId: 'Snykid',
-            severity: 'critical'
+            snykTokenId: 'Snykid'
          )
        }
     stage('Build-and-Tag')

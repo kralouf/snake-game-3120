@@ -9,15 +9,11 @@ node('ubuntu-Appserver-3120')
  
       stage('SCA-SAST-SNYK-TEST') 
       {
-       agent 
-       {
-         label 'ubuntu-Appserver-3120'
-       }
          snykSecurity(
             snykInstallation: 'Snyk',
             snykTokenId: 'Snykid'
          )
-       }
+      }
     stage('Build-and-Tag')
     {
         /* This builds the actual image; 

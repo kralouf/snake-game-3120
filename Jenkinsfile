@@ -9,26 +9,57 @@ node('ubuntu-Appserver-3120')
  
       stage('SCA-SAST-SNYK-TEST') 
       {
+        agent any
+        script {
          snykSecurity(
             snykInstallation: 'Snyk',
             snykTokenId: 'Snykid',
             severity: 'critical'
          )
       }
+    }
+    stage('Sonarqube-Analyze')
+    {
+        agent {
+            label 'ubuntu-Appserver-3120'
+        }
+        steps {
+            script {
+                def scannerHome = tool 'SonarQubeScanner'
+                withSonarQubeEnv('sonarqube') {
+                    sh "${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=gameapp
+                        -Dsonar.sources=."
+                }
+            }
+        }
+    }
     stage('Build-and-Tag')
     {
-        /* This builds the actual image; 
-        * This is synonymous to docker build on the command line */
-        app = docker.build("lkraimer/snake_game_3120")
+        agent {
+            label 'ubuntu-Appserver-3120'
+        }
+        steps {
+            script {
+                def app = docker.build("lkraimer/snake_game_3120")
+                app.tag("latest")
+            }
+        }
     }
     stage('Post-to-dockerhub')
     {
-        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub_credentials')
-        {
-         app.push("latest")
+        agent {
+            label 'ubuntu-Appserver-3120'
+        }
+        steps {
+            script {
+                docker.withRegistry('https://registry.hub.docker.com', 'dockerhub_credentials')
+                {
+                    app.push("latest")
+                }
+            }
         }
     }
- 
     stage('Pull-image-server')
     {
         sh "docker-compose down"

@@ -1,72 +1,78 @@
-node('ubuntu-Appserver-3120')
-{
-    def app
-    stage('Cloning Git')
-    {
-    /* Let's make sure we have the repository cloned to our workspace */
-    checkout scm
-    }
+pipeline {
+    agent none
+    stages {
+        stage('CLONE GIT REPOSITORY') {
+            agent {
+                label 'ubuntu-Appserver-3120'
+            }
+            steps {
+                checkout scm
+            }
+        }  
  
-      stage('SCA-SAST-SNYK-TEST') 
-      {
-        agent any
-        script {
-         snykSecurity(
-            snykInstallation: 'Snyk',
-            snykTokenId: 'Snykid',
-            severity: 'critical'
-         )
-      }
-    }
-    stage('Sonarqube-Analyze')
-    {
-        agent {
-            label 'ubuntu-Appserver-3120'
-        }
-        steps {
-            script {
-                def scannerHome = tool 'SonarQubeScanner'
-                withSonarQubeEnv('sonarqube') {
-                    sh "${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.projectKey=gameapp \
-                        -Dsonar.sources=."
+        stage('SCA-SAST-SNYK-TEST') {
+            agent any
+            steps {
+                script {
+                    snykSecurity(
+                        snykInstallation: 'Snyk',
+                        snykTokenId: 'Synkid',
+                        severity: 'critical'
+                    )
                 }
             }
         }
-    }
-    stage('Build-and-Tag')
-    {
-        agent {
-            label 'ubuntu-Appserver-3120'
-        }
-        steps {
-            script {
-                def app = docker.build("lkraimer/snake_game_3120")
-                app.tag("latest")
+ 
+        stage('SonarQube Analysis') {
+            agent {
+                label 'ubuntu-Appserver-3120'
             }
-        }
-    }
-    stage('Post-to-dockerhub')
-    {
-        agent {
-            label 'ubuntu-Appserver-3120'
-        }
-        steps {
-            script {
-                docker.withRegistry('https://registry.hub.docker.com', 'dockerhub_credentials')
-                {
-                    app.push("latest")
+            steps {
+                script {
+                    def scannerHome = tool 'SonarQubeScanner'
+                    withSonarQubeEnv('sonarqube') {
+                        sh "${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=gameapp \
+                            -Dsonar.sources=."
+                    }
                 }
             }
         }
-    }
-    stage('DEPLOYMENT') {    
-        agent {
-            label 'ubuntu-Appserver-3120'
+ 
+        stage('BUILD-AND-TAG') {
+            agent {
+                label 'ubuntu-Appserver-3120'
+            }
+            steps {
+                script {
+                    def app = docker.build("lkraimer/snake_game_3120")
+                    app.tag("latest")
+                }
+            }
         }
-        steps {
-            sh "docker-compose down"
-            sh "docker-compose up -d"   
+ 
+        stage('POST-TO-DOCKERHUB') {    
+            agent {
+                label 'ubuntu-Appserver-3120'
+            }
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub_credentials') {
+                        def app = docker.image("lkraimer/snake_game_3120")
+                        app.push("latest")
+                    }
+                }
+            }
+        }
+ 
+        stage('DEPLOYMENT') {    
+            agent {
+                label 'ubuntu-Appserver-3120'
+            }
+            steps {
+                sh "docker-compose down"
+                sh "docker-compose up -d"   
+            }
         }
     }
 }

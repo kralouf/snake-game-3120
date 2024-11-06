@@ -60,10 +60,13 @@ node('ubuntu-Appserver-3120')
             }
         }
     }
-    stage('Pull-image-server')
-    {
-        sh "docker-compose down"
-        sh "docker-compose up -d"
+    stage('DEPLOYMENT') {    
+        agent {
+            label 'ubuntu-Appserver-3120'
+        }
+        steps {
+            sh "docker-compose down"
+            sh "docker-compose up -d"   
+        }
     }
- 
 }
